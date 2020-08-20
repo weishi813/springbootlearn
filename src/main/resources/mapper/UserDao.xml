@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wsw.shirolearn.dao.UserDao">
+    <!--
+        mybatis resultMap使用注意：
+        SQL语句进行多表关联查询时，可能会返回多条语句，使用resultMap进行封装时，需注意以下几点：
+        1）<id column="roleId" property="id"/>或<result column="roleName" property="roleName"/>中：column指的是SQL返回结果中数据，property：指的是实体类中的属性
+        2）如果有多个id，可以使用别名方式；如：<id column="roleId" property="id"/> 对应：SQL语句：select u.id userId；这样才可以将结果集封装，
+             否则只返回单条SQL结果，不会将多行结果封装成一行，如：<id column="id"property="id"/>，对应SQL语句：select *或（select u.id），这种方式不会进行多对多结果封装
+        3）使用resultMap封装后的结果为这种形式：User(id=1, userName=admin, password=e10adc3949ba59abbe56e057f20f883e,
+                                              roles=[Role(id=1, roleName=admin,
+                                              permissions=[Permission(id=1, permissionName=添加用户, PermissionUrl=/user/addUser),
+                                              Permission(id=2, permissionName=查看用户, PermissionUrl=/user/showUser)])])
+        4）SQL语句执行结果：
+                          <==    Columns: userId, userName, password, roleId, roleName, permissionsId, permissionName, permissionUrl
+                          <==        Row: 1, admin, e10adc3949ba59abbe56e057f20f883e, 1, admin, 1, 添加用户, /user/addUser
+                          <==        Row: 1, admin, e10adc3949ba59abbe56e057f20f883e, 1, admin, 2, 查看用户, /user/showUser
+                          <==      Total: 2
+    -->
+    <resultMap type="com.wsw.shirolearn.entity.User" id="user_role_permission">
+        <id column="userId" property="id"/>
+        <!--<id column="id" property="id"/>-->
+        <result column="userName" property="userName"></result>
+        <result column="password" property="password"/>
+        <collection property="roles" ofType="com.wsw.shirolearn.entity.Role">
+            <id column="roleId" property="id"></id>
+            <!--<id column="id" property="id"></id>-->
+            <result column="roleName" property="roleName"></result>
+            <collection property="permissions" ofType="com.wsw.shirolearn.entity.Permission">
+                <id column="permissionsId" property="id"></id>
+                <!--<id column="id" property="id"></id>-->
+                <result column="permissionName" property="permissionName"></result>
+                <result column="permissionUrl" property="permissionUrl"></result>
+            </collection>
+        </collection>
+    </resultMap>
+
+    <select id="getRole" resultMap="user_role_permission">
+        select u.id userId,u.userName,u.password,r.id roleId,r.roleName,p.id
+        permissionsId,p.permissionName,p.permissionUrl
+        -- select *
+        from `user` u,role r,permission p,user_role ur,role_permission rp
+        WHERE u.id=ur.uId and ur.rId=r.id and r.id=rp.rId and rp.pId=p.id and u.userName=#{userName}
+    </select>
+
+</mapper>
